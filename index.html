@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Brinca Comigo — Pedidos</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:sans-serif;background:#FAFAF9;color:#1C1917}
+.sidebar{position:fixed;top:0;left:0;width:220px;height:100vh;background:#fff;border-right:1px solid #FED7AA;padding:24px 16px;display:flex;flex-direction:column;gap:8px}
+.logo{color:#F97316;font-size:18px;font-weight:700;margin-bottom:16px}
+.nav-item{padding:10px 12px;border-radius:8px;cursor:pointer;font-size:14px;color:#78716C}
+.nav-item:hover,.nav-item.active{background:#FFF7ED;color:#F97316;font-weight:600}
+.main{margin-left:220px;padding:24px}
+.page{display:none}.page.active{display:block}
+h2{font-size:20px;font-weight:700;margin-bottom:16px;color:#1C1917}
+.card{background:#fff;border:1px solid #FED7AA;border-radius:12px;padding:20px;margin-bottom:16px}
+.btn{padding:10px 20px;background:#F97316;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+.btn:hover{background:#EA6C0A}
+.btn-outline{background:#fff;color:#F97316;border:1.5px solid #F97316}
+.btn-outline:hover{background:#FFF7ED}
+.btn-green{background:#16A34A}.btn-green:hover{background:#15803D}
+.btn-red{background:#DC2626}.btn-red:hover{background:#B91C1C}
+.btn-sm{padding:6px 12px;font-size:12px}
+.badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-pending{background:#FEF3C7;color:#92400E}
+.badge-ok{background:#D1FAE5;color:#065F46}
+.badge-bling{background:#DBEAFE;color:#1E40AF}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.stat-card{background:#fff;border:1px solid #FED7AA;border-radius:10px;padding:16px;text-align:center}
+.stat-num{font-size:28px;font-weight:700;color:#F97316}
+.stat-label{font-size:12px;color:#78716C;margin-top:4px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 12px;border-bottom:2px solid #FED7AA;color:#78716C;font-weight:600}
+td{padding:10px 12px;border-bottom:1px solid #FEF3C7;vertical-align:top}
+tr:hover td{background:#FFFBF5}
+input,select,textarea{width:100%;padding:8px 12px;border:1.5px solid #FED7AA;border-radius:8px;font-size:14px;outline:none;font-family:sans-serif}
+input:focus,select:focus,textarea:focus{border-color:#F97316}
+label{font-size:13px;font-weight:600;color:#1C1917;display:block;margin-bottom:4px}
+.form-group{margin-bottom:14px}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.tag{background:#FFF7ED;border:1px solid #FED7AA;border-radius:6px;padding:3px 10px;font-size:12px;color:#F97316}
+#toast{position:fixed;bottom:24px;right:24px;background:#1C1917;color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;display:none;z-index:999}
+.empty{text-align:center;padding:40px;color:#A8A29E;font-size:14px}
+.order-card{background:#fff;border:1px solid #FED7AA;border-radius:10px;padding:16px;margin-bottom:12px}
+.order-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.order-client{font-weight:700;font-size:15px}
+.order-items{font-size:13px;color:#57534E;margin-bottom:10px;line-height:1.6}
+.order-footer{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.campaign-badge{background:#E0E7FF;color:#3730A3;border-radius:6px;padding:2px 10px;font-size:11px;font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="logo">🧸 Brinca Comigo</div>
+  <div class="nav-item active" onclick="showPage('dashboard')">📊 Dashboard</div>
+  <div class="nav-item" onclick="showPage('pedidos')">📦 Pedidos</div>
+  <div class="nav-item" onclick="showPage('campanhas')">🏷️ Campanhas</div>
+  <div class="nav-item" onclick="showPage('config')">⚙️ Configurações</div>
+</div>
+
+<div class="main">
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <h2>Dashboard</h2>
+    <div class="grid3" style="margin-bottom:20px">
+      <div class="stat-card"><div class="stat-num" id="stat-pendentes">0</div><div class="stat-label">Pedidos Pendentes</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-bling">0</div><div class="stat-label">Enviados ao Bling</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-campanhas">0</div><div class="stat-label">Campanhas Ativas</div></div>
+    </div>
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:12px">Últimos pedidos recebidos</div>
+      <div id="dashboard-lista"><div class="empty">Nenhum pedido ainda</div></div>
+    </div>
+  </div>
+
+  <!-- PEDIDOS -->
+  <div class="page" id="page-pedidos">
+    <div class="row" style="margin-bottom:16px;justify-content:space-between">
+      <h2 style="margin:0">Pedidos</h2>
+      <div class="row">
+        <select id="filtro-campanha" style="width:180px" onchange="renderPedidos()">
+          <option value="">Todas as campanhas</option>
+        </select>
+        <select id="filtro-status" style="width:140px" onchange="renderPedidos()">
+          <option value="">Todos</option>
+          <option value="pendente">Pendentes</option>
+          <option value="enviado">Enviados ao Bling</option>
+        </select>
+      </div>
+    </div>
+    <div id="lista-pedidos"><div class="empty">Nenhum pedido ainda</div></div>
+  </div>
+
+  <!-- CAMPANHAS -->
+  <div class="page" id="page-campanhas">
+    <div class="row" style="margin-bottom:16px;justify-content:space-between">
+      <h2 style="margin:0">Campanhas</h2>
+      <button class="btn" onclick="showModal('modal-campanha')">+ Nova Campanha</button>
+    </div>
+    <div id="lista-campanhas"><div class="empty">Nenhuma campanha ainda</div></div>
+  </div>
+
+  <!-- CONFIG -->
+  <div class="page" id="page-config">
+    <h2>Configurações</h2>
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:16px">Webhook Z-API</div>
+      <div class="form-group">
+        <label>URL do Webhook (copie e cole no Z-API)</label>
+        <div class="row">
+          <input type="text" id="webhook-url" readonly style="flex:1"/>
+          <button class="btn btn-outline btn-sm" onclick="copiarWebhook()">Copiar</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:16px">Grupos WhatsApp</div>
+      <div class="form-group">
+        <label>ID do Grupo Coletivino</label>
+        <input type="text" id="cfg-grupo-coletivino" placeholder="Ex: 5511999999999-1234567890@g.us"/>
+      </div>
+      <div class="form-group">
+        <label>ID do Grupo VIP (Brinca Comigo VIP)</label>
+        <input type="text" id="cfg-grupo-vip" placeholder="Ex: 5511999999999-0987654321@g.us"/>
+      </div>
+      <button class="btn" onclick="salvarConfig()">Salvar</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL CAMPANHA -->
+<div id="modal-campanha" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:14px;padding:28px;width:460px;max-width:95vw">
+    <div style="font-weight:700;font-size:16px;margin-bottom:16px">Nova Campanha</div>
+    <div class="form-group">
+      <label>Nome da Campanha</label>
+      <input type="text" id="camp-nome" placeholder="Ex: Milon Inverno Jan 26"/>
+    </div>
+    <div class="grid2">
+      <div class="form-group">
+        <label>Marca</label>
+        <input type="text" id="camp-marca" placeholder="Ex: Milon"/>
+      </div>
+      <div class="form-group">
+        <label>Markup %</label>
+        <input type="number" id="camp-markup" value="35" min="0" max="200"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Grupo</label>
+      <select id="camp-grupo">
+        <option value="coletivino">Coletivino</option>
+        <option value="vip">Brinca Comigo VIP</option>
+        <option value="ambos">Ambos</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Status</label>
+      <select id="camp-status">
+        <option value="ativa">Ativa</option>
+        <option value="encerrada">Encerrada</option>
+      </select>
+    </div>
+    <div class="row" style="justify-content:flex-end;gap:8px;margin-top:8px">
+      <button class="btn btn-outline" onclick="hideModal('modal-campanha')">Cancelar</button>
+      <button class="btn" onclick="salvarCampanha()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR PEDIDO -->
+<div id="modal-pedido" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:14px;padding:28px;width:500px;max-width:95vw;max-height:90vh;overflow-y:auto">
+    <div style="font-weight:700;font-size:16px;margin-bottom:16px">Revisar Pedido</div>
+    <div id="modal-pedido-content"></div>
+    <div class="row" style="justify-content:flex-end;gap:8px;margin-top:16px">
+      <button class="btn btn-outline" onclick="hideModal('modal-pedido')">Fechar</button>
+      <button class="btn btn-green" id="btn-enviar-bling" onclick="enviarBling()">Enviar ao Bling</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let pedidos = JSON.parse(localStorage.getItem('bc_pedidos')||'[]');
+let campanhas = JSON.parse(localStorage.getItem('bc_campanhas')||'[]');
+let config = JSON.parse(localStorage.getItem('bc_config')||'{}');
+let pedidoAtual = null;
+
+function save(){
+  localStorage.setItem('bc_pedidos',JSON.stringify(pedidos));
+  localStorage.setItem('bc_campanhas',JSON.stringify(campanhas));
+  localStorage.setItem('bc_config',JSON.stringify(config));
+}
+
+function toast(msg,ok=true){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.style.background=ok?'#16A34A':'#DC2626';
+  t.style.display='block';
+  setTimeout(()=>t.style.display='none',3000);
+}
+
+function showPage(p){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if(p==='pedidos') renderPedidos();
+  if(p==='campanhas') renderCampanhas();
+  if(p==='dashboard') renderDashboard();
+  if(p==='config') renderConfig();
+}
+
+function showModal(id){document.getElementById(id).style.display='flex'}
+function hideModal(id){document.getElementById(id).style.display='none'}
+
+function renderDashboard(){
+  const pend = pedidos.filter(p=>p.status==='pendente').length;
+  const env = pedidos.filter(p=>p.status==='enviado').length;
+  const camp = campanhas.filter(c=>c.status==='ativa').length;
+  document.getElementById('stat-pendentes').textContent=pend;
+  document.getElementById('stat-bling').textContent=env;
+  document.getElementById('stat-campanhas').textContent=camp;
+  const ul = document.getElementById('dashboard-lista');
+  const ult = [...pedidos].reverse().slice(0,5);
+  if(!ult.length){ul.innerHTML='<div class="empty">Nenhum pedido ainda</div>';return;}
+  ul.innerHTML = ult.map(p=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #FEF3C7">
+      <div>
+        <span style="font-weight:600">${p.cliente}</span>
+        <span class="campaign-badge" style="margin-left:8px">${p.campanha||'?'}</span>
+      </div>
+      <span class="badge badge-${p.status==='enviado'?'bling':'pending'}">${p.status==='enviado'?'No Bling':'Pendente'}</span>
+    </div>`).join('');
+}
+
+function renderPedidos(){
+  const fc = document.getElementById('filtro-campanha').value;
+  const fs = document.getElementById('filtro-status').value;
+  // preenche select campanhas
+  const sel = document.getElementById('filtro-campanha');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Todas as campanhas</option>' + campanhas.map(c=>`<option value="${c.nome}">${c.nome}</option>`).join('');
+  sel.value = cur;
+
+  let lista = [...pedidos].reverse();
+  if(fc) lista = lista.filter(p=>p.campanha===fc);
+  if(fs) lista = lista.filter(p=>p.status===fs);
+
+  const div = document.getElementById('lista-pedidos');
+  if(!lista.length){div.innerHTML='<div class="empty">Nenhum pedido encontrado</div>';return;}
+  div.innerHTML = lista.map(p=>`
+    <div class="order-card">
+      <div class="order-header">
+        <div>
+          <span class="order-client">${p.cliente}</span>
+          <span class="campaign-badge" style="margin-left:8px">${p.campanha||'?'}</span>
+          <span class="tag" style="margin-left:4px">${p.grupo||''}</span>
+        </div>
+        <span class="badge badge-${p.status==='enviado'?'bling':'pending'}">${p.status==='enviado'?'No Bling':'Pendente'}</span>
+      </div>
+      <div class="order-items">${(p.itens||[]).map(i=>`• ${i.descricao}${i.cor?' — '+i.cor:''} | Tam: ${i.tamanho||'?'} | Qtd: ${i.quantidade||1}`).join('<br>')}</div>
+      <div class="order-footer">
+        <span style="font-size:12px;color:#A8A29E">${p.data||''}</span>
+        ${p.status==='pendente'?`<button class="btn btn-sm" onclick="abrirPedido('${p.id}')">Revisar e Enviar ao Bling</button>`:'<span style="font-size:12px;color:#16A34A">✅ Enviado ao Bling</span>'}
+      </div>
+    </div>`).join('');
+}
+
+function renderCampanhas(){
+  const div = document.getElementById('lista-campanhas');
+  if(!campanhas.length){div.innerHTML='<div class="empty">Nenhuma campanha ainda</div>';return;}
+  div.innerHTML = campanhas.map((c,i)=>`
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-weight:700;font-size:15px">${c.nome}</div>
+        <div style="font-size:12px;color:#78716C;margin-top:4px">Marca: ${c.marca} | Markup: ${c.markup}% | Grupo: ${c.grupo}</div>
+      </div>
+      <div class="row">
+        <span class="badge badge-${c.status==='ativa'?'ok':'pending'}">${c.status==='ativa'?'Ativa':'Encerrada'}</span>
+        <button class="btn btn-outline btn-sm" onclick="encerrarCampanha(${i})">${c.status==='ativa'?'Encerrar':'Reativar'}</button>
+      </div>
+    </div>`).join('');
+}
+
+function renderConfig(){
+  document.getElementById('webhook-url').value = window.location.origin+'/api/webhook';
+  document.getElementById('cfg-grupo-coletivino').value = config.grupoColetivino||'';
+  document.getElementById('cfg-grupo-vip').value = config.grupoVip||'';
+}
+
+function salvarConfig(){
+  config.grupoColetivino = document.getElementById('cfg-grupo-coletivino').value;
+  config.grupoVip = document.getElementById('cfg-grupo-vip').value;
+  save();
+  toast('Configurações salvas!');
+}
+
+function copiarWebhook(){
+  navigator.clipboard.writeText(document.getElementById('webhook-url').value);
+  toast('URL copiada!');
+}
+
+function salvarCampanha(){
+  const nome = document.getElementById('camp-nome').value.trim();
+  if(!nome){toast('Informe o nome da campanha',false);return;}
+  campanhas.push({
+    id: Date.now().toString(),
+    nome, marca: document.getElementById('camp-marca').value.trim(),
+    markup: document.getElementById('camp-markup').value,
+    grupo: document.getElementById('camp-grupo').value,
+    status: document.getElementById('camp-status').value
+  });
+  save();
+  hideModal('modal-campanha');
+  renderCampanhas();
+  toast('Campanha criada!');
+}
+
+function encerrarCampanha(i){
+  campanhas[i].status = campanhas[i].status==='ativa'?'encerrada':'ativa';
+  save();
+  renderCampanhas();
+}
+
+function abrirPedido(id){
+  pedidoAtual = pedidos.find(p=>p.id===id);
+  if(!pedidoAtual) return;
+  const c = campanhas.find(x=>x.nome===pedidoAtual.campanha);
+  document.getElementById('modal-pedido-content').innerHTML = `
+    <div class="form-group"><label>Cliente</label><input type="text" id="ed-cliente" value="${pedidoAtual.cliente}"/></div>
+    <div class="form-group"><label>Campanha</label>
+      <select id="ed-campanha">${campanhas.map(x=>`<option value="${x.nome}"${x.nome===pedidoAtual.campanha?' selected':''}>${x.nome}</option>`).join('')}</select>
+    </div>
+    <div style="font-weight:600;margin-bottom:8px">Itens</div>
+    ${(pedidoAtual.itens||[]).map((it,i)=>`
+      <div style="border:1px solid #FED7AA;border-radius:8px;padding:12px;margin-bottom:8px">
+        <div class="form-group"><label>Descrição</label><input type="text" id="it-desc-${i}" value="${it.descricao||''}"/></div>
+        <div class="grid2">
+          <div class="form-group"><label>Cor</label><input type="text" id="it-cor-${i}" value="${it.cor||''}"/></div>
+          <div class="form-group"><label>Tamanho</label><input type="text" id="it-tam-${i}" value="${it.tamanho||''}"/></div>
+        </div>
+        <div class="form-group"><label>Quantidade</label><input type="number" id="it-qtd-${i}" value="${it.quantidade||1}" style="width:80px"/></div>
+      </div>`).join('')}`;
+  showModal('modal-pedido');
+}
+
+function enviarBling(){
+  if(!pedidoAtual) return;
+  // salva edições
+  pedidoAtual.cliente = document.getElementById('ed-cliente').value;
+  pedidoAtual.campanha = document.getElementById('ed-campanha').value;
+  (pedidoAtual.itens||[]).forEach((it,i)=>{
+    it.descricao = document.getElementById(`it-desc-${i}`)?.value||it.descricao;
+    it.cor = document.getElementById(`it-cor-${i}`)?.value||it.cor;
+    it.tamanho = document.getElementById(`it-tam-${i}`)?.value||it.tamanho;
+    it.quantidade = document.getElementById(`it-qtd-${i}`)?.value||it.quantidade;
+  });
+  const idx = pedidos.findIndex(p=>p.id===pedidoAtual.id);
+  pedidos[idx] = pedidoAtual;
+  save();
+
+  // chama API
+  fetch('/api/bling',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(pedidoAtual)
+  }).then(r=>r.json()).then(d=>{
+    if(d.ok){
+      pedidos[idx].status='enviado';
+      save();
+      hideModal('modal-pedido');
+      renderPedidos();
+      renderDashboard();
+      toast('✅ Enviado ao Bling com sucesso!');
+    } else {
+      toast('Erro: '+(d.error||'falha'),false);
+    }
+  }).catch(()=>toast('Erro de conexão',false));
+}
+
+renderDashboard();
+renderConfig();
+</script>
+</body>
+</html>
