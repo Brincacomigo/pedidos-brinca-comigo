@@ -1,0 +1,12 @@
+{
+  "name": "pedidos-brinca-comigo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "echo ok"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "formidable": "^3.5.1"
+  }
+}
