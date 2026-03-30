@@ -318,7 +318,7 @@ async function salvarCampanha(){
     status: document.getElementById('camp-status').value
   });
   save();
-  await fetch('/api/dados?chave=bc_campanhas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({valor:campanhas})});
+  await fetch('/api/dados?chave=bc_campanhas&t='+Date.now(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({valor:campanhas})});
   hideModal('modal-campanha');
   renderCampanhas();
   toast('Campanha criada!');
@@ -327,7 +327,7 @@ async function salvarCampanha(){
 async function encerrarCampanha(i){
   campanhas[i].status = campanhas[i].status==='ativa'?'encerrada':'ativa';
   save();
-  await fetch('/api/dados?chave=bc_campanhas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({valor:campanhas})});
+  await fetch('/api/dados?chave=bc_campanhas&t='+Date.now(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({valor:campanhas})});
   renderCampanhas();
 }
 
@@ -386,14 +386,14 @@ function enviarBling(){
 
 async function carregarPedidos() {
   try {
-    const r = await fetch('/api/dados?chave=bc_pedidos');
+    const r = await fetch('/api/dados?chave=bc_pedidos&t=' + Date.now());
     const d = await r.json();
     if (d.valor) {
       const raw = typeof d.valor === 'string' ? JSON.parse(d.valor) : d.valor;
       pedidos = Array.isArray(raw) ? raw : [];
       save();
     }
-    const rc = await fetch('/api/dados?chave=bc_campanhas');
+    const rc = await fetch('/api/dados?chave=bc_campanhas&t=' + Date.now());
     const dc = await rc.json();
     if (dc.valor) {
       const rawc = typeof dc.valor === 'string' ? JSON.parse(dc.valor) : dc.valor;
