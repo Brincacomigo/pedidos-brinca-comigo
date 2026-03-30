@@ -25,6 +25,7 @@ export default async function handler(req, res) {
 
   try {
     const body = req.body;
+    console.log("WEBHOOK RECEBIDO:", JSON.stringify(body).substring(0, 500));
     if (body?.type !== "ReceivedCallback") return res.status(200).json({ ok: true, skip: true });
 
     const phone = body?.phone || "";
