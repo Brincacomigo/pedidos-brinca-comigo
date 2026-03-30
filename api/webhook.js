@@ -91,15 +91,15 @@ Se não for pedido, retorne: {"ehPedido": false}`
     if (!parsed.ehPedido) return res.status(200).json({ ok: true, skip: "not order" });
 
     const pedido = {
-      id: Date.now().toString(),
-      cliente: sender,
-      telefone: phone,
-      grupo,
-      campanha: parsed.campanha || campanhas[0]?.nome || "",
-      itens: parsed.itens || [],
-      status: "pendente",
-      data: new Date().toLocaleString("pt-BR")
-    };
+  id: Date.now().toString(),
+  cliente: String(sender || "Desconhecido"),
+  telefone: String(phone || ""),
+  grupo: String(grupo || "Coletivino"),
+  campanha: String(parsed.campanha || campanhas[0]?.nome || ""),
+  itens: Array.isArray(parsed.itens) ? parsed.itens : [],
+  status: "pendente",
+  data: new Date().toLocaleString("pt-BR")
+};
 
     const pedidos = await kvGet("bc_pedidos") || [];
     pedidos.push(pedido);
