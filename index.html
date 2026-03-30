@@ -386,8 +386,20 @@ function enviarBling(){
   }).catch(()=>toast('Erro de conexão',false));
 }
 
-renderDashboard();
-renderConfig();
+async function carregarPedidos() {
+  try {
+    const r = await fetch('/api/salvar');
+    const d = await r.json();
+    if (d.pedidos) {
+      pedidos = d.pedidos;
+      save();
+    }
+  } catch(e) {}
+  renderDashboard();
+  renderConfig();
+}
+
+carregarPedidos();
 </script>
 </body>
 </html>
