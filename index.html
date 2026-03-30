@@ -389,13 +389,21 @@ function enviarBling(){
 
 async function carregarPedidos() {
   try {
-    const r = await fetch('/api/salvar');
+    const r = await fetch('/api/dados?chave=bc_pedidos');
     const d = await r.json();
-    if (d.pedidos) {
-      pedidos = d.pedidos;
+    if (d.valor) {
+      const raw = typeof d.valor === 'string' ? JSON.parse(d.valor) : d.valor;
+      pedidos = Array.isArray(raw) ? raw : [];
       save();
     }
-  } catch(e) {}
+    const rc = await fetch('/api/dados?chave=bc_campanhas');
+    const dc = await rc.json();
+    if (dc.valor) {
+      const rawc = typeof dc.valor === 'string' ? JSON.parse(dc.valor) : dc.valor;
+      campanhas = Array.isArray(rawc) ? rawc : [];
+      save();
+    }
+  } catch(e) { console.error(e); }
   renderDashboard();
   renderConfig();
 }
