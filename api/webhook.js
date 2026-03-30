@@ -39,7 +39,9 @@ if (!groupId || (!groupId.includes("@g.us") && !groupId.includes("-group"))) ret
     let grupo = "Coletivino";
     if (cfg.grupoVip && groupId === cfg.grupoVip) grupo = "VIP";
 
-    const campanhas = (await kvGet("bc_campanhas") || []).filter(c => c.status === "ativa");
+    let campanhasRaw = await kvGet("bc_campanhas") || [];
+if (typeof campanhasRaw === "string") campanhasRaw = JSON.parse(campanhasRaw);
+const campanhas = campanhasRaw.filter(c => c.status === "ativa");
     if (!campanhas.length) return res.status(200).json({ ok: true, skip: "no campaigns" });
 
     const campanhasStr = campanhas.map(c => `- ${c.nome} (Marca: ${c.marca})`).join("\n");
