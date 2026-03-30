@@ -97,6 +97,7 @@ Se não for pedido, retorne: {"ehPedido": false}`
   grupo: String(grupo || "Coletivino"),
   campanha: String(parsed.campanha || campanhas[0]?.nome || ""),
   itens: Array.isArray(parsed.itens) ? parsed.itens : [],
+  imagem: body?.image?.imageUrl || null,
   status: "pendente",
   data: new Date().toLocaleString("pt-BR")
 };
