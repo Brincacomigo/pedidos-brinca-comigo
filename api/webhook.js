@@ -1,7 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
 export const config = { api: { bodyParser: true } };
 
 async function kvSet(key, value) {
@@ -22,36 +20,28 @@ async function kvGet(key) {
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
-
   try {
     const body = req.body;
     console.log("WEBHOOK RECEBIDO:", JSON.stringify(body).substring(0, 500));
     console.log("type recebido:", body?.type);
-if (body?.type !== "ReceivedCallback") return res.status(200).json({ ok: true, skip: true });
-
+    if (body?.type !== "ReceivedCallback") return res.status(200).json({ ok: true, skip: true });
     const phone = body?.phone || "";
     const sender = body?.senderName || body?.pushname || phone;
     const groupId = body?.chatId || body?.phone || "";
     console.log("chatId:", groupId, "type:", body?.type);
-if (!groupId || (!groupId.includes("@g.us") && !groupId.includes("-group"))) return res.status(200).json({ ok: true, skip: "not group" }); 
-    
+    if (!groupId || (!groupId.includes("@g.us") && !groupId.includes("-group"))) return res.status(200).json({ ok: true, skip: "not group" });
     const cfg = await kvGet("bc_config") || {};
     let grupo = "Coletivino";
     if (cfg.grupoVip && groupId === cfg.grupoVip) grupo = "VIP";
-
     let campanhasRaw = await kvGet("bc_campanhas") || [];
-if (typeof campanhasRaw === "string") campanhasRaw = JSON.parse(campanhasRaw);
-const campanhas = campanhasRaw.filter(c => c.status === "ativa");
+    if (typeof campanhasRaw === "string") campanhasRaw = JSON.parse(campanhasRaw);
+    const campanhas = campanhasRaw.filter(c => c.status === "ativa");
     if (!campanhas.length) return res.status(200).json({ ok: true, skip: "no campaigns" });
-
     const campanhasStr = campanhas.map(c => `- ${c.nome} (Marca: ${c.marca})`).join("\n");
-
     const content = [];
-
     if (body?.image?.imageUrl) {
       content.push({ type: "image", source: { type: "url", url: body.image.imageUrl } });
     }
-
     const texto = body?.text?.message || "";
     content.push({
       type: "text",
@@ -62,52 +52,55 @@ Mensagem: ${texto}
 Campanhas ativas:
 ${campanhasStr}
 
-Analise a mensagem e imagem (se houver) e extraia o pedido.
+Você é um assistente de uma loja de roupas infantis que recebe pedidos pelo WhatsApp.
+As clientes mandam fotos de produtos e textos informais como "quero 1 desse", "1 desse", "quero tamanho 4", "esse aqui tam 2", "2 desses", "um de cada", etc.
+
+REGRAS:
+- Se a mensagem tiver foto E qualquer texto indicando interesse (quero, esse, desse, tamanho, tam, número de tamanho, quantidade), considere como pedido
+- Se tiver só foto sem texto, também pode ser pedido
+- Associe ao produto visível na foto
+- Use a campanha ativa mais provável baseada no contexto
+- Tamanho pode ser número (2, 4, 6), faixa etária (2 anos, 4 anos) ou P/M/G
+
 Retorne SOMENTE JSON sem markdown:
 {
   "ehPedido": true,
   "campanha": "nome exato da campanha ou null",
   "itens": [
     {
-      "descricao": "descrição do produto",
-      "cor": "cor ou null",
-      "tamanho": "tamanho ou null",
+      "descricao": "descrição do produto da foto",
+      "cor": "cor se visível ou null",
+      "tamanho": "tamanho mencionado ou null",
       "quantidade": 1
     }
   ]
 }
-Se não for pedido, retorne: {"ehPedido": false}`
+Se definitivamente não for pedido (ex: pergunta, conversa), retorne: {"ehPedido": false}`
     });
-
     const aiRes = await client.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 1000,
       messages: [{ role: "user", content }]
     });
-
     const txt = aiRes.content.find(b => b.type === "text")?.text || "";
     const parsed = JSON.parse(txt.replace(/```json|```/g, "").trim());
-
     if (!parsed.ehPedido) return res.status(200).json({ ok: true, skip: "not order" });
-
     const pedido = {
-  id: Date.now().toString(),
-  cliente: String(sender || "Desconhecido"),
-  telefone: String(phone || ""),
-  grupo: String(grupo || "Coletivino"),
-  campanha: String(parsed.campanha || campanhas[0]?.nome || ""),
-  itens: Array.isArray(parsed.itens) ? parsed.itens : [],
-  imagem: body?.image?.imageUrl || null,
-  status: "pendente",
-  data: new Date().toLocaleString("pt-BR")
-};
-
-    const pedidos = await kvGet("bc_pedidos") || [];
+      id: Date.now().toString(),
+      cliente: String(sender || "Desconhecido"),
+      telefone: String(phone || ""),
+      grupo: String(grupo || "Coletivino"),
+      campanha: String(parsed.campanha || campanhas[0]?.nome || ""),
+      itens: Array.isArray(parsed.itens) ? parsed.itens : [],
+      imagem: body?.image?.imageUrl || null,
+      status: "pendente",
+      data: new Date().toLocaleString("pt-BR")
+    };
+    const pedidosRaw = await kvGet("bc_pedidos") || [];
+    const pedidos = typeof pedidosRaw === "string" ? JSON.parse(pedidosRaw) : pedidosRaw;
     pedidos.push(pedido);
     await kvSet("bc_pedidos", JSON.stringify(pedidos));
-
     return res.status(200).json({ ok: true, pedido });
-
   } catch (e) {
     console.error(e);
     return res.status(500).json({ error: e.message });
