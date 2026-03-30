@@ -308,7 +308,7 @@ function copiarWebhook(){
   toast('URL copiada!');
 }
 
-function salvarCampanha(){
+async function salvarCampanha(){
   const nome = document.getElementById('camp-nome').value.trim();
   if(!nome){toast('Informe o nome da campanha',false);return;}
   campanhas.push({
@@ -319,14 +319,15 @@ function salvarCampanha(){
     status: document.getElementById('camp-status').value
   });
   save();
+  await fetch('/api/dados?chave=bc_campanhas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({valor:campanhas})});
   hideModal('modal-campanha');
   renderCampanhas();
   toast('Campanha criada!');
 }
-
-function encerrarCampanha(i){
+async function encerrarCampanha(i){
   campanhas[i].status = campanhas[i].status==='ativa'?'encerrada':'ativa';
   save();
+  await fetch('/api/dados?chave=bc_campanhas',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({valor:campanhas})});
   renderCampanhas();
 }
 
