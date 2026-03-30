@@ -26,13 +26,15 @@ export default async function handler(req, res) {
   try {
     const body = req.body;
     console.log("WEBHOOK RECEBIDO:", JSON.stringify(body).substring(0, 500));
-    if (body?.type !== "ReceivedCallback") return res.status(200).json({ ok: true, skip: true });
+    console.log("type recebido:", body?.type);
+if (body?.type !== "ReceivedCallback") return res.status(200).json({ ok: true, skip: true });
 
     const phone = body?.phone || "";
     const sender = body?.senderName || body?.pushname || phone;
     const groupId = body?.chatId || "";
-    if (!groupId.includes("@g.us")) return res.status(200).json({ ok: true, skip: "not group" });
-
+    console.log("chatId:", groupId, "type:", body?.type);
+if (!groupId || (!groupId.includes("@g.us") && !groupId.includes("-group"))) return res.status(200).json({ ok: true, skip: "not group" }); 
+    
     const cfg = await kvGet("bc_config") || {};
     let grupo = "Coletivino";
     if (cfg.grupoVip && groupId === cfg.grupoVip) grupo = "VIP";
