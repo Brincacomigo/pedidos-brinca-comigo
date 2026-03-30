@@ -49,6 +49,7 @@ label{font-size:13px;font-weight:600;color:#1C1917;display:block;margin-bottom:4
 .order-items{font-size:13px;color:#57534E;margin-bottom:10px;line-height:1.6}
 .order-footer{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .campaign-badge{background:#E0E7FF;color:#3730A3;border-radius:6px;padding:2px 10px;font-size:11px;font-weight:600}
+.order-img{max-width:140px;max-height:140px;border-radius:8px;margin-bottom:8px;object-fit:cover;display:block;border:1px solid #FED7AA}
 </style>
 </head>
 <body>
@@ -244,16 +245,13 @@ function renderDashboard(){
 function renderPedidos(){
   const fc = document.getElementById('filtro-campanha').value;
   const fs = document.getElementById('filtro-status').value;
-  // preenche select campanhas
   const sel = document.getElementById('filtro-campanha');
   const cur = sel.value;
   sel.innerHTML = '<option value="">Todas as campanhas</option>' + campanhas.map(c=>`<option value="${c.nome}">${c.nome}</option>`).join('');
   sel.value = cur;
-
   let lista = [...pedidos].reverse();
   if(fc) lista = lista.filter(p=>p.campanha===fc);
   if(fs) lista = lista.filter(p=>p.status===fs);
-
   const div = document.getElementById('lista-pedidos');
   if(!lista.length){div.innerHTML='<div class="empty">Nenhum pedido encontrado</div>';return;}
   div.innerHTML = lista.map(p=>`
@@ -266,6 +264,7 @@ function renderPedidos(){
         </div>
         <span class="badge badge-${p.status==='enviado'?'bling':'pending'}">${p.status==='enviado'?'No Bling':'Pendente'}</span>
       </div>
+      ${p.imagem?`<img src="${p.imagem}" class="order-img"/>` : ''}
       <div class="order-items">${(p.itens||[]).map(i=>`• ${i.descricao}${i.cor?' — '+i.cor:''} | Tam: ${i.tamanho||'?'} | Qtd: ${i.quantidade||1}`).join('<br>')}</div>
       <div class="order-footer">
         <span style="font-size:12px;color:#A8A29E">${p.data||''}</span>
@@ -324,6 +323,7 @@ async function salvarCampanha(){
   renderCampanhas();
   toast('Campanha criada!');
 }
+
 async function encerrarCampanha(i){
   campanhas[i].status = campanhas[i].status==='ativa'?'encerrada':'ativa';
   save();
@@ -334,8 +334,8 @@ async function encerrarCampanha(i){
 function abrirPedido(id){
   pedidoAtual = pedidos.find(p=>p.id===id);
   if(!pedidoAtual) return;
-  const c = campanhas.find(x=>x.nome===pedidoAtual.campanha);
   document.getElementById('modal-pedido-content').innerHTML = `
+    ${pedidoAtual.imagem?`<img src="${pedidoAtual.imagem}" class="order-img" style="max-width:200px;margin-bottom:12px"/>` : ''}
     <div class="form-group"><label>Cliente</label><input type="text" id="ed-cliente" value="${pedidoAtual.cliente}"/></div>
     <div class="form-group"><label>Campanha</label>
       <select id="ed-campanha">${campanhas.map(x=>`<option value="${x.nome}"${x.nome===pedidoAtual.campanha?' selected':''}>${x.nome}</option>`).join('')}</select>
@@ -355,7 +355,6 @@ function abrirPedido(id){
 
 function enviarBling(){
   if(!pedidoAtual) return;
-  // salva edições
   pedidoAtual.cliente = document.getElementById('ed-cliente').value;
   pedidoAtual.campanha = document.getElementById('ed-campanha').value;
   (pedidoAtual.itens||[]).forEach((it,i)=>{
@@ -367,8 +366,6 @@ function enviarBling(){
   const idx = pedidos.findIndex(p=>p.id===pedidoAtual.id);
   pedidos[idx] = pedidoAtual;
   save();
-
-  // chama API
   fetch('/api/bling',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
