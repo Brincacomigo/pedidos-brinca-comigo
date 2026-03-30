@@ -31,7 +31,7 @@ if (body?.type !== "ReceivedCallback") return res.status(200).json({ ok: true, s
 
     const phone = body?.phone || "";
     const sender = body?.senderName || body?.pushname || phone;
-    const groupId = body?.chatId || "";
+    const groupId = body?.chatId || body?.phone || "";
     console.log("chatId:", groupId, "type:", body?.type);
 if (!groupId || (!groupId.includes("@g.us") && !groupId.includes("-group"))) return res.status(200).json({ ok: true, skip: "not group" }); 
     
